@@ -29,11 +29,10 @@
 
         h1 { margin-bottom: 10px; color: var(--accent-color); }
         
-        /* Layout Containers */
         #game-container {
             max-width: 800px;
             width: 100%;
-            display: none; /* Skjult indtil start */
+            display: none; 
             flex-direction: column;
             align-items: center;
         }
@@ -46,7 +45,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        /* Stats Bar */
         .stats-bar {
             display: flex;
             justify-content: space-around;
@@ -58,23 +56,10 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
-        .stat-box {
-            text-align: center;
-        }
+        .stat-box { text-align: center; }
+        .stat-value { font-size: 1.5em; font-weight: bold; display: block; }
+        .stat-label { font-size: 0.8em; color: #aaa; text-transform: uppercase; }
 
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            display: block;
-        }
-
-        .stat-label {
-            font-size: 0.8em;
-            color: #aaa;
-            text-transform: uppercase;
-        }
-
-        /* The Room (Cards) */
         .room-area {
             display: flex;
             gap: 15px;
@@ -84,7 +69,6 @@
             min-height: 160px;
         }
 
-        /* Card Styling */
         .card {
             width: var(--card-width);
             height: var(--card-height);
@@ -113,38 +97,14 @@
             transform: none;
         }
 
-        .card-top, .card-bottom {
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-
-        .card-bottom {
-            transform: rotate(180deg);
-        }
-
-        .card-center {
-            font-size: 2.5em;
-            align-self: center;
-        }
+        .card-top, .card-bottom { font-size: 1.2em; font-weight: bold; }
+        .card-bottom { transform: rotate(180deg); }
+        .card-center { font-size: 2.5em; align-self: center; }
 
         .suit-hearts, .suit-diamonds { color: #d00; }
         .suit-spades, .suit-clubs { color: #000; }
 
-        .card-value-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 0.8em;
-            color: #666;
-            opacity: 0.3;
-        }
-
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 20px;
-        }
+        .controls { display: flex; gap: 20px; }
 
         button {
             padding: 12px 24px;
@@ -163,7 +123,6 @@
         .btn-danger:hover:not(:disabled) { background-color: #666; }
         .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Log */
         #log {
             margin-top: 20px;
             width: 100%;
@@ -181,8 +140,8 @@
         .log-damage { color: var(--danger-color); }
         .log-heal { color: var(--heal-color); }
         .log-equip { color: var(--accent-color); }
+        .log-discard { color: #888; font-style: italic; }
 
-        /* Helpers */
         .hidden { display: none !important; }
         .weapon-display { color: var(--accent-color); }
 
@@ -201,13 +160,7 @@
             <li><strong>Rum:</strong> Der ligger 4 kort. Du skal spille 3 af dem. Det sidste bæres med til næste rum.</li>
             <li><strong>Flygt:</strong> Du kan lægge alle 4 kort i bunden af bunken. Du kan ikke flygte to gange i træk.</li>
         </ul>
-
-        <h3>Korttyper</h3>
-        <ul>
-            <li>♠/♣ <strong>Monstre:</strong> Skader dig svarende til deres værdi. Hvis du har våben, reduceres skaden. (Knægt=11, Dronning=12, Konge=13, Es=14).</li>
-            <li>♦ <strong>Våben:</strong> Udstyr et våben. Bruges til at bekæmpe monstre. Våbnet bliver sløvere (får monsterets værdi), hvis det bruges.</li>
-            <li>♥ <strong>Drikke:</strong> Healer dig. Maks 1 potion pr. rum.</li>
-        </ul>
+        <p style="font-size:0.9em; color:#aaa;">*Tip: Hvis du kun har potions tilbage og har brugt en, fjernes de mindste automatisk for at komme videre.</p>
 
         <button class="btn-primary" onclick="startGame()">Start Spil</button>
     </div>
@@ -246,10 +199,7 @@
 <script>
     // --- Konstanter ---
     const SUITS = {
-        SPADES: '♠',   // Monster
-        CLUBS: '♣',    // Monster
-        HEARTS: '♥',   // Potion
-        DIAMONDS: '♦'  // Våben
+        SPADES: '♠', CLUBS: '♣', HEARTS: '♥', DIAMONDS: '♦'
     };
     
     const TYPE = {
@@ -260,19 +210,17 @@
 
     // --- Game State ---
     let deck = [];
-    let roomCards = []; // De 4 kort på bordet
+    let roomCards = [];
     let hp = 20;
-    let weapon = null; // { value: int } eller null
+    let weapon = null;
     let canFlee = true;
     let cardsPlayedInRoom = 0;
     let potionUsedInRoom = false;
-    let totalCardsPlayed = 0;
     let gameOver = false;
 
     // --- Setup Logic ---
     function createDeck() {
         const d = [];
-        // Værdier 2-10
         for (let v = 2; v <= 10; v++) {
             d.push({ suit: SUITS.SPADES, value: v, type: TYPE.MONSTER, color: 'black' });
             d.push({ suit: SUITS.CLUBS, value: v, type: TYPE.MONSTER, color: 'black' });
@@ -280,21 +228,15 @@
             d.push({ suit: SUITS.DIAMONDS, value: v, type: TYPE.WEAPON, color: 'red' });
         }
         
-        // Sorte Billedkort & Esser (Monstre)
         const faces = [
-            { name: 'J', val: 11 }, 
-            { name: 'Q', val: 12 }, 
-            { name: 'K', val: 13 }, 
-            { name: 'A', val: 14 }
+            { name: 'J', val: 11 }, { name: 'Q', val: 12 }, 
+            { name: 'K', val: 13 }, { name: 'A', val: 14 }
         ];
 
         faces.forEach(f => {
             d.push({ suit: SUITS.SPADES, value: f.val, display: f.name, type: TYPE.MONSTER, color: 'black' });
             d.push({ suit: SUITS.CLUBS, value: f.val, display: f.name, type: TYPE.MONSTER, color: 'black' });
         });
-
-        // Prompt siger: Fjern Røde Billedkort og Røde Esser.
-        // Derfor tilføjer vi IKKE røde J, Q, K, A.
         
         return shuffle(d);
     }
@@ -317,24 +259,17 @@
         canFlee = true;
         gameOver = false;
         
-        dealRoom(true); // Første uddeling
+        dealRoom(true);
         updateUI();
-        log("Spillet er startet. Du går ind i det første rum.");
+        log("Spillet er startet. Held og lykke!");
     }
 
     // --- Core Game Logic ---
 
     function dealRoom(isFirstRoom = false) {
-        // Hvis der er et kort tilbage fra forrige rum (hvis det ikke er første rum)
-        // skal vi beholde det.
-        // I Scoundrel: Man spiller 3 kort, det 4. bliver liggende.
-        
-        // Fjern de spillede kort (null) fra arrayet
         roomCards = roomCards.filter(c => c !== null);
-        
         const cardsNeeded = 4 - roomCards.length;
 
-        // Tjek om vi har vundet (tomt deck og 1 eller 0 kort tilbage)
         if (deck.length === 0 && roomCards.length <= 1) {
             winGame();
             return;
@@ -348,35 +283,25 @@
 
         cardsPlayedInRoom = 0;
         potionUsedInRoom = false;
-        // Hvis vi flygtede sidst, er canFlee false. Hvis vi klarede rummet, resetter vi canFlee til true.
-        // Men vent, reglen er "Cannot flee two rooms in a row".
-        // Så hvis man flygter: næste rum canFlee = false. 
-        // Hvis man spiller et rum: næste rum canFlee = true.
-        // Denne funktion kaldes når et rum er "cleared".
     }
 
     function cardClicked(index) {
         if (gameOver) return;
         
         const card = roomCards[index];
-        if (!card) return; // Allerede spillet
+        if (!card) return;
 
         let turnSuccess = false;
 
-        // --- Håndter logik baseret på type ---
-        
-        // 1. MONSTER
         if (card.type === TYPE.MONSTER) {
             handleMonsterCombat(card);
             turnSuccess = true;
         } 
-        // 2. WEAPON
         else if (card.type === TYPE.WEAPON) {
             weapon = { value: card.value };
             log(`<span class="log-equip">Udstyret våben: ${card.value}</span>`);
             turnSuccess = true;
         } 
-        // 3. POTION
         else if (card.type === TYPE.POTION) {
             if (potionUsedInRoom) {
                 showMessage("Du har allerede brugt en potion i dette rum!");
@@ -391,7 +316,7 @@
         }
 
         if (turnSuccess) {
-            roomCards[index] = null; // Fjern kortet visuelt/logisk
+            roomCards[index] = null;
             cardsPlayedInRoom++;
             checkRoomStatus();
             updateUI();
@@ -403,28 +328,17 @@
         let monsterVal = card.value;
 
         if (weapon) {
-            // Hvis våben: Skade = Monster - Våben (min 0)
             if (weapon.value >= monsterVal) {
                 damage = 0;
-                log(`Du dræbte monster (${monsterVal}) med våben (${weapon.value}). Ingen skade.`);
+                log(`Dræbte monster (${monsterVal}) med våben. Ingen skade.`);
             } else {
                 damage = monsterVal - weapon.value;
-                log(`<span class="log-damage">Våben (${weapon.value}) var for svagt til monster (${monsterVal}). Du tog ${damage} skade.</span>`);
+                log(`<span class="log-damage">Våben svagt. Du tog ${damage} skade.</span>`);
             }
-            
-            // Regel: Våbenet kan kun bruges på monstre mindre end eller lig med nuværende holdbarhed.
-            // I praksis betyder det i Scoundrel, at våbenets værdi bliver lig med det dræbte monster
-            // (medmindre monsteret var stærkere, så er våbenet "brugt op" til det niveau).
-            // Vi sætter våbenværdi til det forrige monster vi dræbte (altså det aktuelle monster)
-            // Men man kan aldrig opgradere våbenet ved at dræbe et stærkt monster.
-            // Så: NewWeaponVal = Math.min(OldWeaponVal, MonsterVal)
-            
-            weapon.value = Math.min(weapon.value, monsterVal); // Våbenet bliver sløvere
-            
+            weapon.value = Math.min(weapon.value, monsterVal);
         } else {
-            // Bare næver
             damage = monsterVal;
-            log(`<span class="log-damage">Kæmpede med bare næver mod monster (${monsterVal}). Du tog ${damage} skade.</span>`);
+            log(`<span class="log-damage">Bare næver mod monster (${monsterVal}). ${damage} skade.</span>`);
         }
 
         hp -= damage;
@@ -435,13 +349,43 @@
     }
 
     function checkRoomStatus() {
+        // --- RETTELSE: Tjek om vi er låst fast (kun potions tilbage) ---
+        const unplayed = roomCards.map((c, i) => ({card: c, index: i})).filter(item => item.card !== null);
+        const onlyPotions = unplayed.length > 0 && unplayed.every(item => item.card.type === TYPE.POTION);
+
+        // Hvis vi har brugt potion, kun har potions tilbage, og mangler at spille kort:
+        if (potionUsedInRoom && onlyPotions && cardsPlayedInRoom < 3) {
+            
+            // Vi skal spille op til 3 kort. Vi fjerner de laveste hjerter.
+            const needed = 3 - cardsPlayedInRoom;
+            
+            // Sorter efter værdi (lavest først)
+            unplayed.sort((a, b) => a.card.value - b.card.value);
+            
+            let discardedCount = 0;
+            
+            for (let i = 0; i < needed; i++) {
+                // Sikkerhedscheck, hvis der ikke er nok kort
+                if (i < unplayed.length) {
+                    const item = unplayed[i];
+                    // Fjern kortet (sæt til null)
+                    roomCards[item.index] = null;
+                    log(`<span class="log-discard">Smed ${item.card.value}♥ væk (kun 1 potion tilladt).</span>`);
+                    discardedCount++;
+                }
+            }
+            
+            cardsPlayedInRoom += discardedCount;
+            showMessage("Overskydende potions fjernet automatisk.");
+        }
+        // --- SLUT PÅ RETTELSE ---
+
         if (cardsPlayedInRoom >= 3) {
-            // Rummet er ryddet. Gør klar til næste.
             setTimeout(() => {
-                canFlee = true; // Vi har klaret et rum, så vi må flygte igen næste gang
+                canFlee = true;
                 dealRoom();
                 updateUI();
-            }, 500);
+            }, 800);
         }
     }
 
@@ -450,32 +394,21 @@
             showMessage("Du kan ikke flygte to gange i træk!");
             return;
         }
-
-        // Tag alle kort i rummet (også dem der ikke er spillet endnu - men i praksis flygter man i starten)
-        // Reglen: "You may choose to flee a room... scooping up all four cards".
-        // Dette gøres normalt i starten af turen. Hvis man har spillet 1 kort, må man så flygte?
-        // Reglen siger "At the start of a turn... choose to flee". Vi antager man kun må flygte før man interagerer.
-        
         if (cardsPlayedInRoom > 0) {
-            showMessage("Du kan kun flygte før du rører kortene i rummet!");
+            showMessage("Du kan kun flygte før du spiller kort!");
             return;
         }
 
         const cardsToMove = roomCards.filter(c => c !== null);
-        // Læg dem i bunden af bunken
-        // For at simulere "bunden", unshifter vi dem ind i starten af arrayet (hvis pop() er toppen)
-        // Eller hvis pop() tager fra enden, så er index 0 bunden.
         deck.unshift(...cardsToMove);
         
-        log("Du flygtede fra rummet! Kortene er lagt i bunden af bunken.");
+        log("Du flygtede! Kort lagt i bunden.");
         
-        roomCards = []; // Tøm rummet
-        canFlee = false; // Må ikke flygte næste gang
+        roomCards = [];
+        canFlee = false;
         dealRoom();
         updateUI();
     }
-
-    // --- UI Updates ---
 
     function updateUI() {
         document.getElementById('hp-display').innerText = hp;
@@ -499,38 +432,31 @@
         container.innerHTML = '';
 
         roomCards.forEach((card, index) => {
-            if (card === null) return; // Kortet er spillet/væk
+            if (card === null) return;
 
             const el = document.createElement('div');
             el.className = `card ${potionUsedInRoom && card.type === TYPE.POTION ? 'disabled' : ''}`;
             el.style.color = card.color;
             el.onclick = () => cardClicked(index);
 
-            // Display Value (J, Q, K, A eller tal)
             const displayVal = card.display || card.value;
-            
-            // Icon Class
             let suitClass = '';
             if (card.suit === SUITS.HEARTS) suitClass = 'suit-hearts';
             else if (card.suit === SUITS.DIAMONDS) suitClass = 'suit-diamonds';
-            else if (card.suit === SUITS.SPADES) suitClass = 'suit-spades';
-            else suitClass = 'suit-clubs';
+            else suitClass = 'suit-spades'; // Sorte kort
 
             el.innerHTML = `
                 <div class="card-top ${suitClass}">${displayVal} ${card.suit}</div>
                 <div class="card-center ${suitClass}">${card.suit}</div>
                 <div class="card-bottom ${suitClass}">${displayVal} ${card.suit}</div>
             `;
-            
             container.appendChild(el);
         });
     }
 
     function showMessage(msg) {
         document.getElementById('message-area').innerText = msg;
-        setTimeout(() => {
-             document.getElementById('message-area').innerText = "Vælg et kort...";
-        }, 3000);
+        setTimeout(() => document.getElementById('message-area').innerText = "Vælg et kort...", 3000);
     }
 
     function log(msg) {
