@@ -33,11 +33,8 @@
             /* Dungeon Background CSS Generator */
             background-color: var(--bg-dark);
             background-image: 
-                /* Slyngplanter / Grøn tåge bund */
                 linear-gradient(to top, rgba(20, 50, 20, 0.4), transparent 30%),
-                /* Vignette */
                 radial-gradient(circle at 50% 50%, transparent 50%, #000 100%),
-                /* Sten mønster */
                 linear-gradient(335deg, var(--stone-dark) 23px, transparent 23px),
                 linear-gradient(155deg, var(--stone-light) 23px, transparent 23px),
                 linear-gradient(335deg, var(--stone-dark) 23px, transparent 23px),
@@ -117,10 +114,10 @@
             border-radius: 6px;
             position: relative;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s ease-out; /* Tilføjet opacity transition */
             box-shadow: 
-                inset 0 0 20px rgba(60, 40, 10, 0.4), /* Indre snavs/skygge */
-                2px 2px 6px rgba(0,0,0,0.6);         /* Ydre skygge */
+                inset 0 0 20px rgba(60, 40, 10, 0.4),
+                2px 2px 6px rgba(0,0,0,0.6);
             border: 1px solid rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
@@ -176,7 +173,7 @@
         }
 
         .combat-btn {
-            display: none; /* Skjult indtil relevant */
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -197,10 +194,12 @@
         .combat-btn:active { transform: translateY(2px); }
 
         .btn-weapon { background: linear-gradient(#b8860b, #8b6508); display: none; }
-        .btn-weapon:hover { background: linear-gradient(#d4af37, #a87b08); border-color: #fff; }
+        .btn-weapon:hover:not(:disabled) { background: linear-gradient(#d4af37, #a87b08); border-color: #fff; }
         
         .btn-bare { background: linear-gradient(#a33, #822); display: none; }
-        .btn-bare:hover { background: linear-gradient(#c44, #a22); border-color: #fff; }
+        .btn-bare:hover:not(:disabled) { background: linear-gradient(#c44, #a22); border-color: #fff; }
+
+        .combat-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
         /* Generelle knapper */
         .btn-std {
@@ -290,11 +289,11 @@
         <div class="room-area" id="room-area"></div>
 
         <div id="action-bar">
-            <button id="btn-use-weapon" class="combat-btn btn-weapon">
+            <button id="btn-use-weapon" class="combat-btn btn-weapon" disabled>
                 ⚔️ Brug Våben
                 <span class="sub" id="lbl-weapon-dmg">0 Skade</span>
             </button>
-            <button id="btn-use-fist" class="combat-btn btn-bare">
+            <button id="btn-use-fist" class="combat-btn btn-bare" disabled>
                 👊 Bare Næver
                 <span class="sub" id="lbl-fist-dmg">-5 HP</span>
             </button>
@@ -312,27 +311,48 @@
     // --- Config & State ---
     const SUITS = { SPADES: '♠', CLUBS: '♣', HEARTS: '♥', DIAMONDS: '♦' };
     const TYPE = { MONSTER: 'monster', POTION: 'potion', WEAPON: 'weapon' };
+    const ANIMATION_DURATION = 300; // ms for card fade out
 
     let deck = [];
-    let roomCards = []; // Array of card objects or null
+    let roomCards = [];
     let hp = 20;
-    let weapon = null; // { value: int }
+    let weapon = null;
     let canFlee = true;
     let cardsPlayedInRoom = 0;
     let potionUsedInRoom = false;
-    
-    // Kamp State
-    let selectedMonsterIndex = -1; // Index på kortet vi vil angribe
+    let selectedMonsterIndex = -1;
 
-    // --- Init ---
-    document.getElementById('btn-start').addEventListener('click', startGame);
-    document.getElementById('flee-btn').addEventListener('click', fleeRoom);
-    
+    // --- DOM Elements ---
     const btnWeapon = document.getElementById('btn-use-weapon');
     const btnFist = document.getElementById('btn-use-fist');
 
-    btnWeapon.addEventListener('click', () => resolveCombat(true));
-    btnFist.addEventListener('click', () => resolveCombat(false));
+    // --- Init ---
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('flee-btn').addEventListener('click', fleeRoom);
+        btnWeapon.addEventListener('click', () => resolveCombat(true));
+        btnFist.addEventListener('click', () => resolveCombat(false));
+    });
+
+    function createDeck() {
+        let d = [];
+        for(let v=2; v<=10; v++) {
+            d.push({s:SUITS.SPADES, v:v, t:TYPE.MONSTER});
+            d.push({s:SUITS.CLUBS, v:v, t:TYPE.MONSTER});
+            d.push({s:SUITS.HEARTS, v:v, t:TYPE.POTION});
+            d.push({s:SUITS.DIAMONDS, v:v, t:TYPE.WEAPON});
+        }
+        [{n:'J',v:11},{n:'Q',v:12},{n:'K',v:13},{n:'A',v:14}].forEach(f => {
+            d.push({s:SUITS.SPADES, v:f.v, d:f.n, t:TYPE.MONSTER});
+            d.push({s:SUITS.CLUBS, v:f.v, d:f.n, t:TYPE.MONSTER});
+        });
+        
+        for(let i=d.length-1; i>0; i--) {
+            const j = Math.floor(Math.random()*(i+1));
+            [d[i], d[j]] = [d[j], d[i]];
+        }
+        return d;
+    }
 
     function startGame() {
         document.getElementById('start-screen').style.display = 'none';
@@ -348,33 +368,9 @@
         log("Spillet er startet.");
     }
 
-    function createDeck() {
-        let d = [];
-        // 2-10
-        for(let v=2; v<=10; v++) {
-            d.push({s:SUITS.SPADES, v:v, t:TYPE.MONSTER});
-            d.push({s:SUITS.CLUBS, v:v, t:TYPE.MONSTER});
-            d.push({s:SUITS.HEARTS, v:v, t:TYPE.POTION});
-            d.push({s:SUITS.DIAMONDS, v:v, t:TYPE.WEAPON});
-        }
-        // Faces
-        [{n:'J',v:11},{n:'Q',v:12},{n:'K',v:13},{n:'A',v:14}].forEach(f => {
-            d.push({s:SUITS.SPADES, v:f.v, d:f.n, t:TYPE.MONSTER});
-            d.push({s:SUITS.CLUBS, v:f.v, d:f.n, t:TYPE.MONSTER});
-        });
-        
-        // Shuffle
-        for(let i=d.length-1; i>0; i--) {
-            const j = Math.floor(Math.random()*(i+1));
-            [d[i], d[j]] = [d[j], d[i]];
-        }
-        return d;
-    }
-
     function dealRoom() {
         roomCards = roomCards.filter(c => c !== null);
         
-        // Win condition check
         if(deck.length === 0 && roomCards.length <= 1) {
             winGame();
             return;
@@ -393,30 +389,28 @@
         const card = roomCards[index];
         if(!card) return;
 
-        // Hvis man klikker på et andet kort mens man har valgt et monster, afbryd valg
         if (selectedMonsterIndex !== -1 && selectedMonsterIndex !== index) {
             deselectMonster();
         }
 
         if(card.t === TYPE.MONSTER) {
-            // HVIS vi har et våben, skal vi vælge angrebsmetode
             if (weapon) {
-                // Toggle selection
                 if (selectedMonsterIndex === index) {
-                    deselectMonster(); // Klikkede på sig selv -> afmarker
+                    deselectMonster();
                 } else {
                     selectMonster(index);
                 }
             } else {
-                // Ingen våben -> direkte kamp (næver)
                 selectedMonsterIndex = index;
-                resolveCombat(false);
+                resolveCombat(false); // Direkte kamp (næver)
             }
         }
         else if(card.t === TYPE.WEAPON) {
             weapon = { value: card.v };
             log(`Udstyrede våben ${card.v}.`);
-            finishCard(index);
+            removeCardVisual(index);
+            // Efter fjernelse af visuelt element, opdatér logik
+            setTimeout(() => { finishCardLogic(index); }, ANIMATION_DURATION);
         }
         else if(card.t === TYPE.POTION) {
             if(potionUsedInRoom) {
@@ -428,7 +422,8 @@
             hp = Math.min(20, hp + heal);
             potionUsedInRoom = true;
             log(`Healede ${hp-old} HP.`);
-            finishCard(index);
+            removeCardVisual(index);
+            setTimeout(() => { finishCardLogic(index); }, ANIMATION_DURATION);
         }
     }
 
@@ -437,11 +432,11 @@
         selectedMonsterIndex = index;
         const card = roomCards[index];
         
-        // Vis knapper
         btnFist.style.display = "flex";
         btnWeapon.style.display = "flex";
+        btnFist.disabled = false;
+        btnWeapon.disabled = false;
         
-        // Opdater labels på knapper
         const dmgBare = card.v;
         document.getElementById('lbl-fist-dmg').innerText = `Tag ${dmgBare} skade`;
         
@@ -493,16 +488,27 @@
             gameOver();
             return;
         }
+
+        removeCardVisual(selectedMonsterIndex);
+        deselectMonster(); 
         
-        deselectMonster(); // Skjul knapper
-        finishCard(selectedMonsterIndex); // Fjern kort
+        // Efter fjernelse af visuelt element, opdatér logik
+        setTimeout(() => { finishCardLogic(selectedMonsterIndex); }, ANIMATION_DURATION);
     }
 
-    function finishCard(index) {
+    function removeCardVisual(index) {
+        const cardEl = document.getElementById(`card-${index}`);
+        if(cardEl) {
+            cardEl.style.opacity = '0';
+            // Disable click during fadeout
+            cardEl.onclick = null; 
+        }
+    }
+    
+    function finishCardLogic(index) {
         roomCards[index] = null;
         cardsPlayedInRoom++;
         
-        // Auto-discard logic for potions
         checkStuck();
 
         if(cardsPlayedInRoom >= 3) {
@@ -510,24 +516,27 @@
             setTimeout(() => {
                 dealRoom();
                 updateUI();
-            }, 600);
+            }, 300); // Lille forsinkelse før næste rum
         }
         updateUI();
     }
 
     function checkStuck() {
-        // Tjekker om der kun er potions tilbage og vi har brugt en
         let activeCards = roomCards.map((c,i)=>({c,i})).filter(x=>x.c!==null);
         let onlyPotions = activeCards.every(x => x.c.t === TYPE.POTION);
         
         if(potionUsedInRoom && onlyPotions && cardsPlayedInRoom < 3) {
             let needed = 3 - cardsPlayedInRoom;
-            activeCards.sort((a,b) => a.c.v - b.c.v); // Laveste først
+            activeCards.sort((a,b) => a.c.v - b.c.v);
             
             for(let i=0; i<needed; i++) {
                 if(i < activeCards.length) {
-                    roomCards[activeCards[i].i] = null;
+                    const idxToRemove = activeCards[i].i;
                     log(`Smed potion ${activeCards[i].c.v} væk (regel).`);
+                    
+                    removeCardVisual(idxToRemove);
+                    // Sæt til null efter visuel fjernelse
+                    roomCards[idxToRemove] = null; 
                     cardsPlayedInRoom++;
                 }
             }
@@ -564,21 +573,24 @@
 
         document.getElementById('flee-btn').disabled = (!canFlee || cardsPlayedInRoom > 0);
 
-        // Render Cards
+        renderCards();
+    }
+
+    function renderCards() {
         const container = document.getElementById('room-area');
         container.innerHTML = "";
         
         roomCards.forEach((c, i) => {
-            if(!c) return; // Skip tomme slots
+            if(!c) return;
             
             let el = document.createElement('div');
             let disabled = (potionUsedInRoom && c.t === TYPE.POTION);
             let isTarget = (i === selectedMonsterIndex);
             
             el.className = `card ${disabled?'disabled':''} ${isTarget?'selected-target':''}`;
+            el.id = `card-${i}`; // Unikt ID til fjernelse
             el.onclick = () => { if(!disabled) cardClicked(i); };
             
-            // Icon logic
             let icon = getIcon(c.t, c.v);
             let valStr = c.d || c.v;
             
@@ -593,9 +605,7 @@
                 <div class="card-corner bottom ${suitClass}">${valStr} ${c.s}</div>
             `;
             
-            // Random rotation for natural look
-            // Gem rotationen baseret på index for at den ikke hopper ved re-render
-            let rot = (i * 7 + 3) % 4 - 2; // pseudo random -2 til 2 deg
+            let rot = (i * 7 + 3) % 4 - 2;
             el.style.transform = isTarget ? "scale(1.05)" : `rotate(${rot}deg)`;
             
             container.appendChild(el);
