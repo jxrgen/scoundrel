@@ -277,6 +277,10 @@
                 <span class="stat-value" id="weapon-display">Ingen</span>
             </div>
             <div class="stat-box">
+                <span class="stat-label">Rum</span>
+                <span class="stat-value" id="room-count">0</span>
+            </div>
+            <div class="stat-box">
                 <span class="stat-label">Bunken</span>
                 <span class="stat-value" id="deck-count">0</span>
             </div>
@@ -320,6 +324,7 @@
     let canFlee = true;
     let cardsPlayedInRoom = 0;
     let potionUsedInRoom = false;
+    let roomCount = 0; // NY: Rum-tæller
     let selectedMonsterIndex = -1;
 
     // --- DOM Elements ---
@@ -363,12 +368,18 @@
         canFlee = true;
         cardsPlayedInRoom = 0;
         potionUsedInRoom = false;
+        roomCount = 0; // Nulstil tæller
         dealRoom(true);
         updateUI();
         log("Spillet er startet.");
     }
 
     function dealRoom() {
+        const isNewRoom = roomCards.filter(c => c !== null).length <= 1;
+        if(isNewRoom) {
+            roomCount++; // Tæl kun op ved nyt rum, ikke ved flygt
+        }
+        
         roomCards = roomCards.filter(c => c !== null);
         
         if(deck.length === 0 && roomCards.length <= 1) {
@@ -387,7 +398,7 @@
     // --- Interaction ---
     function cardClicked(index) {
         const card = roomCards[index];
-        if(!card) return;
+        if(!card) return; // VIGTIGT: Kan ikke klikke på null/besejrede kort
 
         if (selectedMonsterIndex !== -1 && selectedMonsterIndex !== index) {
             deselectMonster();
@@ -408,9 +419,8 @@
         else if(card.t === TYPE.WEAPON) {
             weapon = { value: card.v };
             log(`Udstyrede våben ${card.v}.`);
-            removeCardVisual(index);
-            // Efter fjernelse af visuelt element, opdatér logik
-            setTimeout(() => { finishCardLogic(index); }, ANIMATION_DURATION);
+            // Start process for at fjerne kortet
+            finishCard(index);
         }
         else if(card.t === TYPE.POTION) {
             if(potionUsedInRoom) {
@@ -422,8 +432,8 @@
             hp = Math.min(20, hp + heal);
             potionUsedInRoom = true;
             log(`Healede ${hp-old} HP.`);
-            removeCardVisual(index);
-            setTimeout(() => { finishCardLogic(index); }, ANIMATION_DURATION);
+            // Start process for at fjerne kortet
+            finishCard(index);
         }
     }
 
@@ -467,6 +477,7 @@
         const card = roomCards[selectedMonsterIndex];
         let dmg = 0;
         
+        // 1. Udfør kamp & opdatér stats
         if(useWeapon && weapon) {
             if(weapon.value >= card.v) {
                 dmg = 0;
@@ -489,36 +500,45 @@
             return;
         }
 
-        removeCardVisual(selectedMonsterIndex);
-        deselectMonster(); 
-        
-        // Efter fjernelse af visuelt element, opdatér logik
-        setTimeout(() => { finishCardLogic(selectedMonsterIndex); }, ANIMATION_DURATION);
+        // 2. Start process for at fjerne kortet
+        finishCard(selectedMonsterIndex);
+
+        // 3. De-select monster efter kamp er startet (før kortet er visuelt væk)
+        deselectMonster();
     }
 
-    function removeCardVisual(index) {
+    // --- Card Removal Flow ---
+
+    // Fjerner visuelt kortet og starter logisk opdatering efter animation
+    function finishCard(index) {
+        // VIGTIGT FIX: Fjern klik-event og nulstil kortet i arrayet øjeblikkeligt
+        // Dette sikrer, at man IKKE kan dobbelt-klikke, uanset forsinkelse.
         const cardEl = document.getElementById(`card-${index}`);
         if(cardEl) {
-            cardEl.style.opacity = '0';
-            // Disable click during fadeout
             cardEl.onclick = null; 
+            cardEl.style.opacity = '0';
         }
+
+        // Kør logikken efter animationen er færdig
+        setTimeout(() => { finishCardLogic(index); }, ANIMATION_DURATION);
     }
     
+    // Udfører den logiske opdatering af spillet
     function finishCardLogic(index) {
-        roomCards[index] = null;
+        roomCards[index] = null; // Sæt kortet til null
         cardsPlayedInRoom++;
         
         checkStuck();
 
         if(cardsPlayedInRoom >= 3) {
             canFlee = true;
+            // dealRoom kalder updateUI og tæller roomCount op
             setTimeout(() => {
-                dealRoom();
+                dealRoom(); 
                 updateUI();
-            }, 300); // Lille forsinkelse før næste rum
+            }, 300);
         }
-        updateUI();
+        updateUI(); // Opdatér UI nu, så det null'ede kort forsvinder
     }
 
     function checkStuck() {
@@ -534,8 +554,12 @@
                     const idxToRemove = activeCards[i].i;
                     log(`Smed potion ${activeCards[i].c.v} væk (regel).`);
                     
-                    removeCardVisual(idxToRemove);
-                    // Sæt til null efter visuel fjernelse
+                    // Visuel fjernelse + logisk nulstilling
+                    const cardEl = document.getElementById(`card-${idxToRemove}`);
+                    if(cardEl) {
+                        cardEl.onclick = null;
+                        cardEl.style.opacity = '0';
+                    }
                     roomCards[idxToRemove] = null; 
                     cardsPlayedInRoom++;
                 }
@@ -553,7 +577,9 @@
         roomCards = [];
         canFlee = false;
         log("Flygtede fra rummet!");
-        dealRoom();
+        
+        // Tæl ikke rummet op ved flugt
+        dealRoom(false); // Kalder dealRoom, men sætter ikke isNewRoom til true
         updateUI();
     }
 
@@ -561,6 +587,7 @@
     function updateUI() {
         document.getElementById('hp-display').innerText = hp;
         document.getElementById('deck-count').innerText = deck.length;
+        document.getElementById('room-count').innerText = roomCount; // NY: Rum-tæller
         
         let wElem = document.getElementById('weapon-display');
         if(weapon) {
@@ -646,7 +673,7 @@
     function winGame() {
         document.getElementById('game-container').style.display = 'none';
         document.getElementById('win-screen').style.display = 'block';
-        document.getElementById('final-score').innerText = `Liv tilbage: ${hp}`;
+        document.getElementById('final-score').innerText = `Liv tilbage: ${hp} efter ${roomCount} rum.`;
         confetti();
     }
     
