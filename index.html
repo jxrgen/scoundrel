@@ -6,304 +6,271 @@
     <title>Scoundrel - Dungeon Crawler</title>
     <style>
         :root {
-            --bg-dark: #0f0f13;
-            --text-color: #e0e0e0;
+            --bg-dark: #121215;
+            --stone-dark: #1a1a20;
+            --stone-light: #252530;
+            --text-color: #dcdcd0;
             --card-width: 110px;
             --card-height: 154px;
-            --accent-color: #ffd700;
+            --accent-color: #ffcc00;
             --danger-color: #ff4444;
-            --heal-color: #44ff44;
-            --card-bg: #f4e4bc;
+            --heal-color: #66ff66;
+            --card-bg: #e6d2b5; /* Pergament */
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-dark);
-            /* Mørk baggrund med diskret mønster */
-            background-image: 
-                radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%),
-                linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222),
-                linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
-            background-position: 0 0, 0 0, 20px 20px;
+            font-family: 'Segoe UI', Tahoma, 'Courier New', sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
             color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
             overflow-x: hidden;
             user-select: none;
+            
+            /* Dungeon Background CSS Generator */
+            background-color: var(--bg-dark);
+            background-image: 
+                /* Slyngplanter / Grøn tåge bund */
+                linear-gradient(to top, rgba(20, 50, 20, 0.4), transparent 30%),
+                /* Vignette */
+                radial-gradient(circle at 50% 50%, transparent 50%, #000 100%),
+                /* Sten mønster */
+                linear-gradient(335deg, var(--stone-dark) 23px, transparent 23px),
+                linear-gradient(155deg, var(--stone-light) 23px, transparent 23px),
+                linear-gradient(335deg, var(--stone-dark) 23px, transparent 23px),
+                linear-gradient(155deg, var(--stone-light) 23px, transparent 23px);
+            background-size: 100% 100%, 100% 100%, 58px 58px, 58px 58px, 58px 58px, 58px 58px;
+            background-position: 0 0, 0 0, 0px 2px, 4px 35px, 29px 31px, 34px 6px;
         }
 
-        h1 { 
-            margin-bottom: 5px; 
-            color: var(--accent-color); 
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-            font-size: 2.5em;
+        h1 {
+            font-family: 'Georgia', serif;
+            color: var(--accent-color);
+            text-shadow: 2px 2px 0px #000;
+            font-size: 2.8em;
+            margin-bottom: 5px;
             letter-spacing: 2px;
-            text-align: center;
         }
 
-        /* --- Containers --- */
+        /* --- UI Containers --- */
         #game-container {
-            max-width: 850px;
+            max-width: 900px;
             width: 100%;
-            display: none; /* Skjult indtil start */
+            display: none;
             flex-direction: column;
             align-items: center;
-            position: relative;
-            z-index: 10;
         }
 
-        #rules-container, #win-overlay {
-            max-width: 600px;
-            background: rgba(30, 30, 35, 0.95);
+        #start-screen, #win-screen {
+            max-width: 500px;
+            background: rgba(20, 20, 25, 0.95);
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            border: 1px solid #444;
+            border-radius: 4px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            border: 2px solid #555;
             text-align: center;
+            position: relative;
             z-index: 100;
             margin-top: 50px;
         }
-        
-        #win-overlay {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 600;
-        }
+
+        #win-screen { display: none; }
 
         /* --- Stats Bar --- */
         .stats-bar {
             display: flex;
             justify-content: space-around;
             width: 100%;
-            background: linear-gradient(to bottom, #444, #2a2a2a);
+            background: rgba(0,0,0,0.6);
             padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            border: 2px solid #555;
-            box-shadow: inset 0 0 10px #000;
+            border-radius: 10px;
+            border: 1px solid #444;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
         }
 
         .stat-box { text-align: center; }
-        .stat-value { font-size: 1.6em; font-weight: bold; display: block; text-shadow: 1px 1px 0 #000; }
+        .stat-value { font-size: 1.8em; font-weight: bold; text-shadow: 2px 2px 0 #000; }
         .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* --- Kort --- */
+        /* --- Room Area (Cards) --- */
         .room-area {
             display: flex;
             gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 30px;
-            min-height: 170px;
-            perspective: 1000px;
+            margin-bottom: 20px;
+            min-height: 180px;
+            padding: 10px;
         }
 
+        /* --- CARD DESIGN (Frønnet look) --- */
         .card {
             width: var(--card-width);
             height: var(--card-height);
-            background: var(--card-bg);
-            border-radius: 10px;
+            background-color: var(--card-bg);
+            /* Papir tekstur via støj */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+            border-radius: 6px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 
+                inset 0 0 20px rgba(60, 40, 10, 0.4), /* Indre snavs/skygge */
+                2px 2px 6px rgba(0,0,0,0.6);         /* Ydre skygge */
+            border: 1px solid rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             padding: 8px;
             box-sizing: border-box;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.25s, box-shadow 0.25s;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
-            border: 1px solid #c0b090;
-            color: #000; /* Sikrer sort tekst på kort */
+            color: #222;
         }
 
         .card:hover {
-            transform: translateY(-8px) scale(1.05);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-            z-index: 5;
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.7);
+            z-index: 10;
         }
 
         .card.disabled {
             opacity: 0.5;
             filter: grayscale(80%);
             cursor: not-allowed;
-            transform: none;
+            transform: none !important;
         }
 
-        /* Card Content */
+        .card.selected-target {
+            border: 3px solid var(--danger-color);
+            box-shadow: 0 0 15px var(--danger-color);
+            transform: scale(1.05);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px var(--danger-color); }
+            50% { box-shadow: 0 0 25px var(--danger-color); }
+            100% { box-shadow: 0 0 10px var(--danger-color); }
+        }
+
         .card-corner { font-size: 1.1em; font-weight: bold; line-height: 1; }
         .card-corner.bottom { transform: rotate(180deg); text-align: left; }
-        .card-center-icon { font-size: 3.5em; align-self: center; text-shadow: 0 2px 0 rgba(0,0,0,0.1); }
+        .card-center-icon { font-size: 3.5em; align-self: center; opacity: 0.9; text-shadow: 0 2px 0 rgba(0,0,0,0.1); }
 
-        .suit-hearts { color: #b30000; }
-        .suit-diamonds { color: #cc7000; }
-        .suit-spades, .suit-clubs { color: #111; }
+        .suit-hearts { color: #8a0000; }
+        .suit-diamonds { color: #b36b00; }
+        .suit-spades, .suit-clubs { color: #1a1a1a; }
 
-        /* --- Controls --- */
-        .controls { display: flex; gap: 20px; margin-bottom: 20px; }
-
-        button {
-            padding: 12px 24px;
-            font-size: 1em;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: bold;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
-            text-transform: uppercase;
-        }
-        button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
-
-        .btn-primary { background: linear-gradient(#ffd700, #daa520); color: #222; }
-        .btn-primary:hover { filter: brightness(1.1); }
-        
-        .btn-danger { background: linear-gradient(#555, #333); color: #fff; border: 1px solid #666; }
-        .btn-danger:hover:not(:disabled) { background: linear-gradient(#666, #444); }
-        .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-
-        /* --- Combat Modal --- */
-        #combat-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 200;
+        /* --- Action Bar (Kamp knapper) --- */
+        #action-bar {
+            height: 70px;
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
             justify-content: center;
             align-items: center;
-        }
-
-        .modal-content {
-            background: #2a2a2f;
-            padding: 30px;
-            border-radius: 12px;
-            border: 2px solid var(--accent-color);
-            text-align: center;
-            max-width: 400px;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
-            animation: popIn 0.3s ease;
-            color: #fff;
-        }
-
-        @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .modal-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 20px;
+            width: 100%;
         }
 
         .combat-btn {
-            padding: 15px;
-            font-size: 1.1em;
-            display: flex;
-            justify-content: space-between;
+            display: none; /* Skjult indtil relevant */
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            width: 160px;
+            height: 60px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+            color: #fff;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: all 0.2s;
         }
 
-        .btn-weapon { background: linear-gradient(#d4af37, #b8860b); color: #000; }
-        .btn-barehand { background: linear-gradient(#d9534f, #c9302c); color: #fff; }
+        .combat-btn span.sub { font-size: 0.7em; font-weight: normal; opacity: 0.9; text-transform: none; }
+        .combat-btn:active { transform: translateY(2px); }
+
+        .btn-weapon { background: linear-gradient(#b8860b, #8b6508); display: none; }
+        .btn-weapon:hover { background: linear-gradient(#d4af37, #a87b08); border-color: #fff; }
+        
+        .btn-bare { background: linear-gradient(#a33, #822); display: none; }
+        .btn-bare:hover { background: linear-gradient(#c44, #a22); border-color: #fff; }
+
+        /* Generelle knapper */
+        .btn-std {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            background: #d4af37;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #8b6508;
+        }
+        .btn-std:hover { background: #e5c14d; }
+        .btn-std:active { transform: translateY(2px); box-shadow: 0 1px 0 #8b6508; }
+
+        .btn-flee {
+            background: #444; color: #ccc;
+            padding: 10px 20px;
+            border-radius: 4px; border: 1px solid #666;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-flee:hover:not(:disabled) { background: #555; color: #fff; }
+        .btn-flee:disabled { opacity: 0.4; cursor: not-allowed; }
 
         /* --- Log --- */
         #log {
             width: 100%;
             height: 120px;
             overflow-y: auto;
-            background: rgba(0,0,0,0.6);
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
             font-size: 0.9em;
-            border: 1px solid #444;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-            color: #ddd;
+            border: 1px solid #333;
+            color: #ccc;
         }
-
-        .log-entry { margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 2px; }
-        .log-damage { color: #ff6b6b; }
-        .log-heal { color: #6bff6b; }
-        .log-equip { color: #ffd700; }
-        .log-discard { color: #888; font-style: italic; }
-
-        .hidden { display: none !important; }
-        .weapon-active { color: var(--accent-color); text-shadow: 0 0 5px var(--accent-color); }
-
-        /* --- Confetti --- */
-        #confetti-canvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 500;
-        }
-
+        .log-line { margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 2px; }
     </style>
 </head>
 <body>
 
-    <canvas id="confetti-canvas"></canvas>
+    <canvas id="confetti-canvas" style="position:fixed; top:0; left:0; pointer-events:none; z-index:999;"></canvas>
 
-    <div id="win-overlay">
-        <h1 style="color: var(--heal-color)">SEJR!</h1>
-        <p style="font-size: 1.2em; margin: 20px 0; color:#fff;">Du har ryddet fangekælderen og overlevede med æren i behold.</p>
-        <p id="final-score" style="color: #aaa;"></p>
-        <button class="btn-primary" id="btn-restart-win">Spil Igen</button>
-    </div>
-
-    <div id="rules-container">
+    <div id="start-screen">
         <h1>Scoundrel</h1>
-        <p>En dungeon crawler med et almindeligt kortspil.</p>
-        
-        <div style="text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin: 20px 0; color: #ccc;">
-            <h3>Regler</h3>
-            <ul style="line-height: 1.6;">
-                <li><strong>Mål:</strong> Tøm bunken uden at dø. (Start: 20 HP).</li>
-                <li><strong>Rummet:</strong> 4 kort. Spil 3. Det sidste bæres med.</li>
-                <li><strong>Flygt:</strong> Læg 4 kort i bunden. Kun 1 gang i træk.</li>
-                <li><strong>♠/♣ Monstre:</strong> Skader dig. Bekæmp dem med våben eller næver.</li>
-                <li><strong>♦ Våben:</strong> Udstyr våben. Styrken falder, når det bruges.</li>
-                <li><strong>♥ Drikke:</strong> Healer dig. <strong>Maks 1 potion pr. rum!</strong></li>
-            </ul>
+        <p style="color:#aaa;">Dungeon crawler med 52 kort.</p>
+        <div style="text-align:left; background:rgba(0,0,0,0.5); padding:15px; border-radius:5px; margin:20px 0; font-size:0.9em;">
+            <strong style="color:var(--accent-color)">Regler:</strong><br>
+            • 4 kort i rummet. Spil 3. Sidste kort følger med.<br>
+            • <strong>♥ Drikke:</strong> Healer dig. Max 1 pr. rum.<br>
+            • <strong>♦ Våben:</strong> Udstyr våben. Mister styrke ved brug.<br>
+            • <strong>♠/♣ Monstre:</strong> Vælg våben eller næver.
         </div>
-        <button class="btn-primary" id="btn-start">Gå ind i mørket</button>
+        <button class="btn-std" id="btn-start">Gå ind i mørket</button>
     </div>
 
-    <div id="combat-modal">
-        <div class="modal-content">
-            <h2 id="combat-title" style="margin-top:0; color:var(--accent-color)">Vælg Kampstil</h2>
-            <div id="combat-info" style="margin-bottom: 20px; font-size: 1.1em; color: #ddd;"></div>
-            
-            <div class="modal-buttons">
-                <button id="btn-fight-weapon" class="combat-btn btn-weapon">
-                    <span>🗡️ Brug Våben</span>
-                    <span id="weapon-dmg-preview" style="font-size:0.8em; opacity:0.8">0 skade</span>
-                </button>
-                <div id="weapon-consequence" style="font-size: 0.8em; color: #e5c14d; margin-bottom: 5px;"></div>
-
-                <button id="btn-fight-bare" class="combat-btn btn-barehand">
-                    <span>👊 Bare Næver</span>
-                    <span id="bare-dmg-preview" style="font-size:0.8em; opacity:0.8">-5 HP</span>
-                </button>
-            </div>
-            <button id="btn-cancel-combat" style="margin-top: 15px; background: transparent; color: #888; border: 1px solid #444; padding: 5px 10px; font-size:0.8em;">Annuller</button>
-        </div>
+    <div id="win-screen">
+        <h1 style="color:var(--heal-color)">SEJR!</h1>
+        <p>Du overlevede fangekælderen.</p>
+        <p id="final-score" style="font-size:1.5em; margin:20px 0;"></p>
+        <button class="btn-std" onclick="location.reload()">Spil Igen</button>
     </div>
 
     <div id="game-container">
+        
         <div class="stats-bar">
             <div class="stat-box">
-                <span class="stat-label">Liv (HP)</span>
+                <span class="stat-label">Helbred</span>
                 <span class="stat-value" id="hp-display" style="color:var(--heal-color)">20</span>
             </div>
             <div class="stat-box">
@@ -311,253 +278,236 @@
                 <span class="stat-value" id="weapon-display">Ingen</span>
             </div>
             <div class="stat-box">
-                <span class="stat-label">Fangekælder</span>
+                <span class="stat-label">Bunken</span>
                 <span class="stat-value" id="deck-count">0</span>
             </div>
         </div>
 
-        <div id="message-area" style="margin-bottom:10px; min-height: 20px; font-weight:bold; color: #fff; text-shadow: 1px 1px 2px black;">
+        <div id="message-area" style="margin-bottom:10px; min-height:24px; font-weight:bold; color:#fff; text-align:center;">
             Vælg et kort...
         </div>
 
         <div class="room-area" id="room-area"></div>
 
-        <div class="controls">
-            <button id="flee-btn" class="btn-danger">🏃 Flygt fra rum</button>
+        <div id="action-bar">
+            <button id="btn-use-weapon" class="combat-btn btn-weapon">
+                ⚔️ Brug Våben
+                <span class="sub" id="lbl-weapon-dmg">0 Skade</span>
+            </button>
+            <button id="btn-use-fist" class="combat-btn btn-bare">
+                👊 Bare Næver
+                <span class="sub" id="lbl-fist-dmg">-5 HP</span>
+            </button>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <button id="flee-btn" class="btn-flee">🏃 Flygt fra rum</button>
         </div>
 
         <div id="log"></div>
+
     </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Konstanter ---
+    // --- Config & State ---
     const SUITS = { SPADES: '♠', CLUBS: '♣', HEARTS: '♥', DIAMONDS: '♦' };
     const TYPE = { MONSTER: 'monster', POTION: 'potion', WEAPON: 'weapon' };
 
-    // --- State ---
     let deck = [];
-    let roomCards = [];
+    let roomCards = []; // Array of card objects or null
     let hp = 20;
-    let weapon = null; 
+    let weapon = null; // { value: int }
     let canFlee = true;
     let cardsPlayedInRoom = 0;
     let potionUsedInRoom = false;
-    let gameOver = false;
-    let pendingCombatCardIndex = -1;
+    
+    // Kamp State
+    let selectedMonsterIndex = -1; // Index på kortet vi vil angribe
 
-    // --- Event Listeners ---
+    // --- Init ---
     document.getElementById('btn-start').addEventListener('click', startGame);
-    document.getElementById('btn-restart-win').addEventListener('click', () => location.reload());
     document.getElementById('flee-btn').addEventListener('click', fleeRoom);
     
-    document.getElementById('btn-fight-weapon').addEventListener('click', () => resolveCombat(true));
-    document.getElementById('btn-fight-bare').addEventListener('click', () => resolveCombat(false));
-    document.getElementById('btn-cancel-combat').addEventListener('click', closeCombatModal);
+    const btnWeapon = document.getElementById('btn-use-weapon');
+    const btnFist = document.getElementById('btn-use-fist');
 
-    // --- Helpers ---
-    function getIcon(type, value) {
-        if (type === TYPE.MONSTER) {
-            if (value <= 4) return '🐀'; 
-            if (value <= 6) return '🐍'; 
-            if (value <= 8) return '🐺'; 
-            if (value <= 10) return '🧟'; 
-            if (value === 11) return '🧛'; 
-            if (value === 12) return '👺'; 
-            if (value === 13) return '👹'; 
-            return '🐉'; 
-        } 
-        else if (type === TYPE.WEAPON) {
-            if (value <= 4) return '🗡️'; 
-            if (value <= 7) return '⚔️'; 
-            if (value <= 10) return '🪓'; 
-            return '🔱'; 
-        }
-        else if (type === TYPE.POTION) {
-            return '🧪'; 
-        }
-        return '';
-    }
-
-    // --- Core Logic ---
-    function createDeck() {
-        const d = [];
-        for (let v = 2; v <= 10; v++) {
-            d.push({ suit: SUITS.SPADES, value: v, type: TYPE.MONSTER, color: 'black' });
-            d.push({ suit: SUITS.CLUBS, value: v, type: TYPE.MONSTER, color: 'black' });
-            d.push({ suit: SUITS.HEARTS, value: v, type: TYPE.POTION, color: 'red' });
-            d.push({ suit: SUITS.DIAMONDS, value: v, type: TYPE.WEAPON, color: 'red' });
-        }
-        const faces = [
-            { name: 'J', val: 11 }, { name: 'Q', val: 12 }, 
-            { name: 'K', val: 13 }, { name: 'A', val: 14 }
-        ];
-        faces.forEach(f => {
-            d.push({ suit: SUITS.SPADES, value: f.val, display: f.name, type: TYPE.MONSTER, color: 'black' });
-            d.push({ suit: SUITS.CLUBS, value: f.val, display: f.name, type: TYPE.MONSTER, color: 'black' });
-        });
-        return shuffle(d);
-    }
-
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            // Brug en midlertidig variabel for at undgå destructuring bugs i visse browsere
-            const temp = array[i];
-            array[i] = array[j];
-            array[j] = temp;
-        }
-        return array;
-    }
+    btnWeapon.addEventListener('click', () => resolveCombat(true));
+    btnFist.addEventListener('click', () => resolveCombat(false));
 
     function startGame() {
-        document.getElementById('rules-container').style.display = 'none';
-        document.getElementById('win-overlay').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'none';
         document.getElementById('game-container').style.display = 'flex';
-        
         deck = createDeck();
         hp = 20;
         weapon = null;
         canFlee = true;
-        gameOver = false;
-        
+        cardsPlayedInRoom = 0;
+        potionUsedInRoom = false;
         dealRoom(true);
         updateUI();
-        log("Du træder ind i mørket. Pas på derude.");
+        log("Spillet er startet.");
     }
 
-    function dealRoom(isFirstRoom = false) {
+    function createDeck() {
+        let d = [];
+        // 2-10
+        for(let v=2; v<=10; v++) {
+            d.push({s:SUITS.SPADES, v:v, t:TYPE.MONSTER});
+            d.push({s:SUITS.CLUBS, v:v, t:TYPE.MONSTER});
+            d.push({s:SUITS.HEARTS, v:v, t:TYPE.POTION});
+            d.push({s:SUITS.DIAMONDS, v:v, t:TYPE.WEAPON});
+        }
+        // Faces
+        [{n:'J',v:11},{n:'Q',v:12},{n:'K',v:13},{n:'A',v:14}].forEach(f => {
+            d.push({s:SUITS.SPADES, v:f.v, d:f.n, t:TYPE.MONSTER});
+            d.push({s:SUITS.CLUBS, v:f.v, d:f.n, t:TYPE.MONSTER});
+        });
+        
+        // Shuffle
+        for(let i=d.length-1; i>0; i--) {
+            const j = Math.floor(Math.random()*(i+1));
+            [d[i], d[j]] = [d[j], d[i]];
+        }
+        return d;
+    }
+
+    function dealRoom() {
         roomCards = roomCards.filter(c => c !== null);
         
-        // Tjek sejr
-        if (deck.length === 0 && roomCards.length <= 1) {
+        // Win condition check
+        if(deck.length === 0 && roomCards.length <= 1) {
             winGame();
             return;
         }
 
-        const cardsNeeded = 4 - roomCards.length;
-        for (let i = 0; i < cardsNeeded; i++) {
-            if (deck.length > 0) roomCards.push(deck.pop());
+        while(roomCards.length < 4 && deck.length > 0) {
+            roomCards.push(deck.pop());
         }
-
         cardsPlayedInRoom = 0;
         potionUsedInRoom = false;
+        deselectMonster();
     }
 
+    // --- Interaction ---
     function cardClicked(index) {
-        if (gameOver) return;
         const card = roomCards[index];
-        if (!card) return;
+        if(!card) return;
 
-        if (card.type === TYPE.MONSTER) {
+        // Hvis man klikker på et andet kort mens man har valgt et monster, afbryd valg
+        if (selectedMonsterIndex !== -1 && selectedMonsterIndex !== index) {
+            deselectMonster();
+        }
+
+        if(card.t === TYPE.MONSTER) {
+            // HVIS vi har et våben, skal vi vælge angrebsmetode
             if (weapon) {
-                openCombatModal(index, card);
+                // Toggle selection
+                if (selectedMonsterIndex === index) {
+                    deselectMonster(); // Klikkede på sig selv -> afmarker
+                } else {
+                    selectMonster(index);
+                }
             } else {
-                resolveCombatDirectly(index, false); 
+                // Ingen våben -> direkte kamp (næver)
+                selectedMonsterIndex = index;
+                resolveCombat(false);
             }
-        } 
-        else if (card.type === TYPE.WEAPON) {
-            weapon = { value: card.value };
-            log(`<span class="log-equip">Udstyret våben: ${card.value}</span>`);
-            finalizeTurn(index);
-        } 
-        else if (card.type === TYPE.POTION) {
-            if (potionUsedInRoom) {
-                showMessage("Du har allerede drukket en potion her!");
+        }
+        else if(card.t === TYPE.WEAPON) {
+            weapon = { value: card.v };
+            log(`Udstyrede våben ${card.v}.`);
+            finishCard(index);
+        }
+        else if(card.t === TYPE.POTION) {
+            if(potionUsedInRoom) {
+                msg("Du har allerede drukket i dette rum!");
                 return;
             }
-            const oldHp = hp;
-            hp = Math.min(20, hp + card.value);
+            let heal = card.v;
+            let old = hp;
+            hp = Math.min(20, hp + heal);
             potionUsedInRoom = true;
-            log(`<span class="log-heal">Drak potion. +${hp - oldHp} HP.</span>`);
-            finalizeTurn(index);
+            log(`Healede ${hp-old} HP.`);
+            finishCard(index);
         }
     }
 
-    function openCombatModal(index, card) {
-        pendingCombatCardIndex = index;
-        const modal = document.getElementById('combat-modal');
-        const title = document.getElementById('combat-title');
-        const info = document.getElementById('combat-info');
-        const dmgPrevW = document.getElementById('weapon-dmg-preview');
-        const dmgPrevB = document.getElementById('bare-dmg-preview');
-        const consq = document.getElementById('weapon-consequence');
-
-        const monsterIcon = getIcon(card.type, card.value);
-        title.innerHTML = `Monster: ${monsterIcon} (Styrke ${card.value})`;
+    // --- Combat Logic ---
+    function selectMonster(index) {
+        selectedMonsterIndex = index;
+        const card = roomCards[index];
         
-        // Beregn våben skade
-        let dmgWeapon = 0;
-        let newWeaponVal = weapon.value;
-        if (weapon.value >= card.value) {
-            dmgWeapon = 0;
-            newWeaponVal = card.value; 
-        } else {
-            dmgWeapon = card.value - weapon.value;
-            newWeaponVal = Math.min(weapon.value, card.value);
-        }
-
-        info.innerHTML = `Dit våben: ${weapon.value} ♦ <br>Monster: ${card.value} ♣♠`;
+        // Vis knapper
+        btnFist.style.display = "flex";
+        btnWeapon.style.display = "flex";
         
-        dmgPrevW.innerText = `Tag ${dmgWeapon} skade`;
-        dmgPrevW.style.color = (dmgWeapon === 0) ? "#4f4" : "#f44";
+        // Opdater labels på knapper
+        const dmgBare = card.v;
+        document.getElementById('lbl-fist-dmg').innerText = `Tag ${dmgBare} skade`;
         
-        consq.innerText = `Våben styrke falder til ${newWeaponVal}`;
-        dmgPrevB.innerText = `Tag ${card.value} skade`;
+        let dmgWep = 0;
+        if(weapon.value >= card.v) dmgWep = 0;
+        else dmgWep = card.v - weapon.value;
+        
+        let nextWepVal = Math.min(weapon.value, card.v);
+        
+        document.getElementById('lbl-weapon-dmg').innerText = 
+            `Tag ${dmgWep} skade (Våben -> ${nextWepVal})`;
 
-        modal.style.display = 'flex';
+        updateUI(); 
+        msg("Vælg angreb nedenfor!");
     }
 
-    function closeCombatModal() {
-        document.getElementById('combat-modal').style.display = 'none';
-        pendingCombatCardIndex = -1;
+    function deselectMonster() {
+        selectedMonsterIndex = -1;
+        btnFist.style.display = "none";
+        btnWeapon.style.display = "none";
+        msg("Vælg et kort...");
+        updateUI();
     }
 
     function resolveCombat(useWeapon) {
-        if (pendingCombatCardIndex === -1) return;
-        closeCombatModal();
-        resolveCombatDirectly(pendingCombatCardIndex, useWeapon);
-    }
-
-    function resolveCombatDirectly(index, useWeapon) {
-        const card = roomCards[index];
-        const monsterVal = card.value;
-        let damage = 0;
-
-        if (useWeapon && weapon) {
-            if (weapon.value >= monsterVal) {
-                damage = 0;
-                log(`Monster (${monsterVal}) dræbt med våben. 0 skade.`);
+        if(selectedMonsterIndex === -1) return;
+        
+        const card = roomCards[selectedMonsterIndex];
+        let dmg = 0;
+        
+        if(useWeapon && weapon) {
+            if(weapon.value >= card.v) {
+                dmg = 0;
+                log(`Dræbte monster (${card.v}) fejlfrit.`);
             } else {
-                damage = monsterVal - weapon.value;
-                log(`<span class="log-damage">Våben (${weapon.value}) vs Monster (${monsterVal}). Du tog ${damage} skade.</span>`);
+                dmg = card.v - weapon.value;
+                log(`Våben for svagt. Tog ${dmg} skade.`);
             }
-            weapon.value = Math.min(weapon.value, monsterVal);
+            weapon.value = Math.min(weapon.value, card.v);
         } else {
-            damage = monsterVal;
-            log(`<span class="log-damage">Bare næver mod Monster (${monsterVal}). Du tog ${damage} skade.</span>`);
+            dmg = card.v;
+            log(`Sloges med næverne. Tog ${dmg} skade.`);
         }
-
-        hp -= damage;
-        if (hp <= 0) {
+        
+        hp -= dmg;
+        if(hp <= 0) {
             hp = 0;
             updateUI();
-            loseGame();
+            gameOver();
             return;
         }
-
-        finalizeTurn(index);
+        
+        deselectMonster(); // Skjul knapper
+        finishCard(selectedMonsterIndex); // Fjern kort
     }
 
-    function finalizeTurn(index) {
+    function finishCard(index) {
         roomCards[index] = null;
         cardsPlayedInRoom++;
         
-        checkStuckState();
+        // Auto-discard logic for potions
+        checkStuck();
 
-        if (cardsPlayedInRoom >= 3) {
+        if(cardsPlayedInRoom >= 3) {
+            canFlee = true;
             setTimeout(() => {
-                canFlee = true;
                 dealRoom();
                 updateUI();
             }, 600);
@@ -565,170 +515,154 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
     }
 
-    function checkStuckState() {
-        const unplayed = roomCards.map((c, i) => ({card: c, index: i})).filter(item => item.card !== null);
-        const onlyPotions = unplayed.length > 0 && unplayed.every(item => item.card.type === TYPE.POTION);
-
-        if (potionUsedInRoom && onlyPotions && cardsPlayedInRoom < 3) {
-            const needed = 3 - cardsPlayedInRoom;
-            unplayed.sort((a, b) => a.card.value - b.card.value);
+    function checkStuck() {
+        // Tjekker om der kun er potions tilbage og vi har brugt en
+        let activeCards = roomCards.map((c,i)=>({c,i})).filter(x=>x.c!==null);
+        let onlyPotions = activeCards.every(x => x.c.t === TYPE.POTION);
+        
+        if(potionUsedInRoom && onlyPotions && cardsPlayedInRoom < 3) {
+            let needed = 3 - cardsPlayedInRoom;
+            activeCards.sort((a,b) => a.c.v - b.c.v); // Laveste først
             
-            let discardedCount = 0;
-            for (let i = 0; i < needed; i++) {
-                if (i < unplayed.length) {
-                    const item = unplayed[i];
-                    roomCards[item.index] = null;
-                    log(`<span class="log-discard">Smed potion ${item.card.value} væk (låst).</span>`);
-                    discardedCount++;
+            for(let i=0; i<needed; i++) {
+                if(i < activeCards.length) {
+                    roomCards[activeCards[i].i] = null;
+                    log(`Smed potion ${activeCards[i].c.v} væk (regel).`);
+                    cardsPlayedInRoom++;
                 }
             }
-            cardsPlayedInRoom += discardedCount;
-            if (discardedCount > 0) showMessage("Ubrugelige potions fjernet.");
         }
     }
 
     function fleeRoom() {
-        if (!canFlee || cardsPlayedInRoom > 0) {
-            showMessage("Du kan ikke flygte nu!");
+        if(!canFlee || cardsPlayedInRoom > 0) {
+            msg("Du kan ikke flygte nu.");
             return;
         }
-        const cardsToMove = roomCards.filter(c => c !== null);
-        deck.unshift(...cardsToMove);
-        log("Du flygtede! Kort lagt i bunden.");
+        let leftover = roomCards.filter(c => c!==null);
+        deck.unshift(...leftover);
         roomCards = [];
         canFlee = false;
+        log("Flygtede fra rummet!");
         dealRoom();
         updateUI();
     }
 
+    // --- UI Render ---
     function updateUI() {
         document.getElementById('hp-display').innerText = hp;
         document.getElementById('deck-count').innerText = deck.length;
         
-        const wDisplay = document.getElementById('weapon-display');
-        if (weapon) {
-            const icon = getIcon(TYPE.WEAPON, weapon.value);
-            wDisplay.innerHTML = `<span class="weapon-active">${icon} ${weapon.value}</span>`;
+        let wElem = document.getElementById('weapon-display');
+        if(weapon) {
+            wElem.innerHTML = `${getIcon(TYPE.WEAPON, weapon.value)} ${weapon.value}`;
+            wElem.style.color = "var(--accent-color)";
         } else {
-            wDisplay.innerText = "Ingen";
+            wElem.innerText = "Ingen";
+            wElem.style.color = "#aaa";
         }
 
-        const fleeBtn = document.getElementById('flee-btn');
-        fleeBtn.disabled = !canFlee || cardsPlayedInRoom > 0;
+        document.getElementById('flee-btn').disabled = (!canFlee || cardsPlayedInRoom > 0);
 
-        renderCards();
-    }
-
-    function renderCards() {
+        // Render Cards
         const container = document.getElementById('room-area');
-        container.innerHTML = '';
-
-        roomCards.forEach((card, index) => {
-            if (card === null) return;
-
-            const el = document.createElement('div');
-            const isDisabled = (potionUsedInRoom && card.type === TYPE.POTION);
-            el.className = `card ${isDisabled ? 'disabled' : ''}`;
-            el.style.color = card.color;
-            el.onclick = () => !isDisabled && cardClicked(index);
-
-            const displayVal = card.display || card.value;
+        container.innerHTML = "";
+        
+        roomCards.forEach((c, i) => {
+            if(!c) return; // Skip tomme slots
+            
+            let el = document.createElement('div');
+            let disabled = (potionUsedInRoom && c.t === TYPE.POTION);
+            let isTarget = (i === selectedMonsterIndex);
+            
+            el.className = `card ${disabled?'disabled':''} ${isTarget?'selected-target':''}`;
+            el.onclick = () => { if(!disabled) cardClicked(i); };
+            
+            // Icon logic
+            let icon = getIcon(c.t, c.v);
+            let valStr = c.d || c.v;
+            
             let suitClass = '';
-            if (card.suit === SUITS.HEARTS) suitClass = 'suit-hearts';
-            else if (card.suit === SUITS.DIAMONDS) suitClass = 'suit-diamonds';
+            if(c.s === SUITS.HEARTS) suitClass = 'suit-hearts';
+            else if(c.s === SUITS.DIAMONDS) suitClass = 'suit-diamonds';
             else suitClass = 'suit-spades';
 
-            let iconSize = "3.5em";
-            if (card.type === TYPE.POTION) iconSize = `${2.5 + (card.value * 0.15)}em`;
-
             el.innerHTML = `
-                <div class="card-corner ${suitClass}">${displayVal} ${card.suit}</div>
-                <div class="card-center-icon" style="font-size:${iconSize}">
-                    ${getIcon(card.type, card.value)}
-                </div>
-                <div class="card-corner bottom ${suitClass}">${displayVal} ${card.suit}</div>
+                <div class="card-corner ${suitClass}">${valStr} ${c.s}</div>
+                <div class="card-center-icon">${icon}</div>
+                <div class="card-corner bottom ${suitClass}">${valStr} ${c.s}</div>
             `;
+            
+            // Random rotation for natural look
+            // Gem rotationen baseret på index for at den ikke hopper ved re-render
+            let rot = (i * 7 + 3) % 4 - 2; // pseudo random -2 til 2 deg
+            el.style.transform = isTarget ? "scale(1.05)" : `rotate(${rot}deg)`;
+            
             container.appendChild(el);
         });
     }
 
-    function showMessage(msg) {
-        document.getElementById('message-area').innerText = msg;
-        setTimeout(() => document.getElementById('message-area').innerText = "Vælg et kort...", 3000);
+    function getIcon(type, v) {
+        if(type===TYPE.POTION) return '🧪';
+        if(type===TYPE.WEAPON) {
+            if(v<=5) return '🗡️';
+            if(v<=8) return '⚔️';
+            return '🪓';
+        }
+        if(type===TYPE.MONSTER) {
+            if(v<=5) return '🐀';
+            if(v<=8) return '🧟';
+            if(v<=10) return '🐺';
+            if(v===11) return '🧛';
+            if(v===12) return '🦂';
+            if(v===13) return '👹';
+            return '🐉';
+        }
+        return '';
     }
 
-    function log(msg) {
-        const logEl = document.getElementById('log');
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        entry.innerHTML = `> ${msg}`;
-        logEl.prepend(entry);
+    function msg(txt) {
+        document.getElementById('message-area').innerText = txt;
+    }
+
+    function log(txt) {
+        let l = document.getElementById('log');
+        let d = document.createElement('div');
+        d.className = 'log-line';
+        d.innerText = "> " + txt;
+        l.prepend(d);
     }
 
     function winGame() {
-        gameOver = true;
-        document.getElementById('game-container').classList.add('hidden');
-        const winOver = document.getElementById('win-overlay');
-        winOver.style.display = 'block';
-        document.getElementById('final-score').innerText = `Resterende HP: ${hp}`;
-        startConfetti();
+        document.getElementById('game-container').style.display = 'none';
+        document.getElementById('win-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = `Liv tilbage: ${hp}`;
+        confetti();
+    }
+    
+    function gameOver() {
+        document.getElementById('room-area').innerHTML = 
+            "<h2 style='color:red; width:100%; text-align:center;'>DU ER DØD</h2>";
+        setTimeout(() => {
+             if(confirm("Du døde! Prøv igen?")) location.reload();
+        }, 500);
     }
 
-    function loseGame() {
-        gameOver = true;
-        document.getElementById('room-area').innerHTML = '<h2 style="color:#cf3838; font-size:3em; width:100%; text-align:center;">DU DØDE</h2>';
-        document.getElementById('flee-btn').classList.add('hidden');
-        
-        const restartBtn = document.createElement('button');
-        restartBtn.className = "btn-primary";
-        restartBtn.innerText = "Prøv Igen";
-        restartBtn.onclick = () => location.reload();
-        restartBtn.style.margin = "0 auto";
-        
-        document.getElementById('room-area').appendChild(restartBtn);
-    }
-
-    // --- Confetti ---
-    function startConfetti() {
-        const canvas = document.getElementById("confetti-canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        const confetti = [];
-        const colors = ["#ffd700", "#ff4444", "#44ff44", "#ffffff", "#4488ff"];
-
-        for (let i = 0; i < 200; i++) {
-            confetti.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height - canvas.height,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                size: Math.random() * 8 + 4,
-                speed: Math.random() * 3 + 2,
-                oscillation: Math.random() * 25,
-                angle: Math.random() * 360
-            });
+    // Simple Confetti
+    function confetti() {
+        const c = document.getElementById('confetti-canvas');
+        const x = c.getContext('2d');
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        let p = [];
+        for(let i=0;i<100;i++) p.push({x:Math.random()*c.width, y:Math.random()*c.height-c.height, c:['#f00','#0f0','#00f','#ff0'][Math.floor(Math.random()*4)], s:Math.random()*5+5});
+        function loop() {
+            x.clearRect(0,0,c.width,c.height);
+            p.forEach(o=>{o.y+=3; if(o.y>c.height)o.y=0; x.fillStyle=o.c; x.fillRect(o.x,o.y,o.s,o.s);});
+            requestAnimationFrame(loop);
         }
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            confetti.forEach(c => {
-                c.y += c.speed;
-                c.x += Math.sin(c.y / 50) * 2; 
-                c.angle += 2;
-                if (c.y > canvas.height) c.y = -10;
-                ctx.save();
-                ctx.translate(c.x, c.y);
-                ctx.rotate(c.angle * Math.PI / 180);
-                ctx.fillStyle = c.color;
-                ctx.fillRect(-c.size/2, -c.size/2, c.size, c.size);
-                ctx.restore();
-            });
-            requestAnimationFrame(animate);
-        }
-        animate();
+        loop();
     }
-});
+
 </script>
 </body>
 </html>
