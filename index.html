@@ -27,10 +27,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow: hidden; /* For at skjule spøgelseselementet uden for skærmen */
+            overflow: hidden;
             user-select: none;
             
-            /* Dungeon Background CSS Generator (Mere smadret) */
+            /* Dungeon Background CSS Generator (Smadret) */
             background-color: var(--bg-dark);
             background-image: 
                 linear-gradient(to top, rgba(20, 50, 20, 0.4), transparent 30%),
@@ -55,7 +55,7 @@
         .ghost {
             position: absolute;
             top: 20%; 
-            left: -100px; /* Starter uden for skærmen */
+            left: -100px; 
             width: 300px;
             height: 150px;
             background: rgba(0, 0, 0, 0.2);
@@ -165,10 +165,26 @@
             border: 3px solid var(--danger-color);
             box-shadow: 0 0 15px var(--danger-color);
             transform: scale(1.05);
-            animation: none; /* Fjern puls animation her */
+            animation: none;
         }
+
+        .card-corner { font-size: 1.1em; font-weight: bold; line-height: 1; }
+        .card-corner.bottom { transform: rotate(180deg); text-align: left; }
         
-        /* --- Action Switch (NY KOMPONENT) --- */
+        /* RETTET: Ikonstørrelse tilbage til original/stor */
+        .card-center-icon { 
+            font-size: 3.5em; 
+            align-self: center; 
+            opacity: 0.9; 
+            text-shadow: 0 2px 0 rgba(0,0,0,0.1); 
+        }
+
+        /* RETTET: Sikrer at hjerter og ruder har farve */
+        .suit-hearts { color: #8a0000; }
+        .suit-diamonds { color: #b36b00; }
+        .suit-spades, .suit-clubs { color: #1a1a1a; }
+        
+        /* --- Action Switch --- */
         #action-bar {
             height: 70px;
             display: flex;
@@ -322,7 +338,7 @@
 
     <div id="start-screen">
         <h1>Scoundrel</h1>
-        <p style="color:#aaa;">Dungeon crawler med 52 kort.</p>
+        <p style="color:#aaa;">Dungeon crawler med 44 kort.</p> 
         <div style="text-align:left; background:rgba(0,0,0,0.5); padding:15px; border-radius:5px; margin:20px 0; font-size:0.9em;">
             <strong style="color:var(--accent-color)">Regler:</strong><br>
             • 4 kort i rummet. Spil 3. Sidste kort følger med.<br>
@@ -403,8 +419,8 @@
     let cardsPlayedInRoom = 0;
     let potionUsedInRoom = false;
     let roomCount = 0; 
-    let selectedMonsterIndex = -1; // Stadig brugt, men kun internt til visuelt target
-    let combatMode = 'weapon'; // NY: weapon (default/left) eller fist (right)
+    let selectedMonsterIndex = -1; 
+    let combatMode = 'weapon'; 
 
     // --- DOM Elements ---
     const combatSwitchInput = document.getElementById('combat-switch-input');
@@ -417,7 +433,6 @@
     });
 
     function updateCombatMode() {
-        // Kontroller kun hvis switchen er aktiv (hvis våben er tilgængeligt)
         if (!combatSwitchInput.disabled) {
             combatMode = combatSwitchInput.checked ? 'fist' : 'weapon';
             msg(`Angrebsmetode skiftet til: ${combatMode === 'weapon' ? 'Våben' : 'Næver'}.`);
@@ -426,17 +441,20 @@
 
     function createDeck() {
         let d = [];
+        // Tal kort (2-10) i 4 kulører (36 kort)
         for(let v=2; v<=10; v++) {
             d.push({s:SUITS.SPADES, v:v, t:TYPE.MONSTER});
             d.push({s:SUITS.CLUBS, v:v, t:TYPE.MONSTER});
             d.push({s:SUITS.HEARTS, v:v, t:TYPE.POTION});
             d.push({s:SUITS.DIAMONDS, v:v, t:TYPE.WEAPON});
         }
+        // Billedkort/Es (J, Q, K, A) i 2 kulører (8 kort)
         [{n:'J',v:11},{n:'Q',v:12},{n:'K',v:13},{n:'A',v:14}].forEach(f => {
             d.push({s:SUITS.SPADES, v:f.v, d:f.n, t:TYPE.MONSTER});
             d.push({s:SUITS.CLUBS, v:f.v, d:f.n, t:TYPE.MONSTER});
         });
         
+        // Blander kortene
         for(let i=d.length-1; i>0; i--) {
             const j = Math.floor(Math.random()*(i+1));
             [d[i], d[j]] = [d[j], d[i]];
@@ -495,9 +513,8 @@
         cardsPlayedInRoom = 0;
         potionUsedInRoom = false;
         
-        // Nulstil combatmode/target
         selectedMonsterIndex = -1;
-        combatMode = 'weapon'; // Våben er default, hvis du har et
+        combatMode = 'weapon'; 
         
         if (checkWinCondition()) return; 
     }
@@ -511,15 +528,17 @@
             msg("Du kan ikke bruge det kort nu!");
             return;
         }
+        
+        // Sæt selectedMonsterIndex uanset korttype (bruges til visuel feedback, hvis det er et monster)
+        selectedMonsterIndex = index; 
 
         if(card.t === TYPE.MONSTER) {
-            selectedMonsterIndex = index; // Sæt target kun for at vise hvilken du rammer
             const useWeapon = (combatMode === 'weapon' && weapon);
             
             resolveCombat(useWeapon);
             
-            // Hvis spilleren bevidst valgte næver, men havde et våben, skift mode tilbage
-            if (!useWeapon && weapon) {
+            // Regel: Hvis man valgte næver (combatMode === 'fist'), men havde et våben, skift mode tilbage til 'weapon'
+            if (combatMode === 'fist' && weapon) {
                 combatMode = 'weapon'; 
             }
         }
@@ -557,7 +576,6 @@
             }
             weapon.value = Math.min(weapon.value, card.v);
         } else {
-            // Nævekamp
             dmg = card.v;
             log(`Sloges med Næverne. Tog ${dmg} skade.`);
         }
@@ -653,16 +671,15 @@
             wElem.innerHTML = `${getIcon(TYPE.WEAPON, weapon.value)} ${weapon.value}`;
             wElem.style.color = "var(--accent-color)";
             
-            // Aktivér switch, hvis man har våben
             combatSwitchInput.disabled = false;
-            combatSwitchInput.checked = (combatMode === 'fist');
+            // Opdater visuel switch baseret på den logiske combatMode
+            combatSwitchInput.checked = (combatMode === 'fist'); 
             document.getElementById('switch-label').style.color = 'white';
 
         } else {
             wElem.innerText = "Ingen";
             wElem.style.color = "#aaa";
             
-            // Deaktivér switch, hvis man ikke har våben
             combatSwitchInput.disabled = true;
             combatSwitchInput.checked = false; 
             combatMode = 'fist'; 
@@ -689,8 +706,10 @@
             
             let el = document.createElement('div');
             let disabled = !isCardPlayable(c); 
-            // Marker monster med rød ramme, hvis combatMode er 'fist'
-            let isTarget = (c.t === TYPE.MONSTER && combatMode === 'fist' && !weapon) || (c.t === TYPE.MONSTER && selectedMonsterIndex === i);
+            
+            // Fjernet den fejlbehæftede logik, der markerede alle monstre ved 'fist' mode uden våben.
+            // Kun det kort, man lige har klikket på, skal have den røde ramme (via selectedMonsterIndex, som nulstilles hurtigt).
+            let isTarget = (selectedMonsterIndex === i); 
             
             el.className = `card ${disabled?'disabled':''} ${isTarget?'selected-target':''}`;
             el.id = `card-${i}`; 
