@@ -16,6 +16,7 @@
             --danger-color: #ff4444;
             --heal-color: #66ff66;
             --card-bg: #e6d2b5; /* Pergament */
+            --tile-size: 70px; /* Standard flisestørrelse */
         }
 
         body {
@@ -29,16 +30,40 @@
             align-items: center;
             overflow: hidden;
             user-select: none;
-            
-            /* Dungeon Background CSS Generator (Smadret) */
             background-color: var(--bg-dark);
+            transition: background-image 0.5s ease; /* Tilføjer overgang for baggrundsændringer */
+        }
+        
+        /* NY: Dynamisk baggrundsklasser baseret på fliser */
+
+        /* Baggrund 1: Smadrede sten */
+        .bg-dungeon-1 {
             background-image: 
                 linear-gradient(to top, rgba(20, 50, 20, 0.4), transparent 30%),
                 radial-gradient(circle at 50% 50%, transparent 50%, #000 100%),
                 linear-gradient(45deg, var(--stone-dark) 10%, transparent 10%, transparent 40%, var(--stone-dark) 40%, var(--stone-dark) 60%, transparent 60%),
                 linear-gradient(-45deg, var(--stone-light) 10%, transparent 10%, transparent 40%, var(--stone-light) 40%, var(--stone-light) 60%, transparent 60%);
-            background-size: 100% 100%, 100% 100%, 70px 70px, 70px 70px;
-            background-position: 0 0, 0 0, 0px 0px, 35px 35px;
+            background-size: 100% 100%, 100% 100%, var(--tile-size) var(--tile-size), var(--tile-size) var(--tile-size);
+            background-position: 0 0, 0 0, 0px 0px, calc(var(--tile-size)/2) calc(var(--tile-size)/2);
+        }
+
+        /* Baggrund 2: Grov mursten (Mørk) */
+        .bg-dungeon-2 {
+            background-image: 
+                linear-gradient(to top, rgba(10, 30, 10, 0.5), transparent 30%),
+                repeating-linear-gradient(135deg, #181818 0 10px, #222 10px 20px),
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 10px);
+            background-size: 100% 100%, 100% 100%, 100% 100%;
+        }
+
+        /* Baggrund 3: Vægfliser med mos (Grøn/brun undertone) */
+        .bg-dungeon-3 {
+            background-color: #20251A;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(20, 30, 10, 0.8) 0, #000 100%),
+                repeating-linear-gradient(0deg, #303028 0 2px, #1a1a1a 2px 40px),
+                repeating-linear-gradient(90deg, #303028 0 2px, #1a1a1a 2px 40px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
         }
 
         /* NY: Spøgelses-effekt */
@@ -50,6 +75,7 @@
             height: 100vh;
             pointer-events: none;
             overflow: hidden;
+            z-index: 1; /* Sørg for at den er under UI */
         }
 
         .ghost {
@@ -146,6 +172,7 @@
             padding: 8px;
             box-sizing: border-box;
             color: #222;
+            z-index: 5;
         }
 
         .card:hover:not(.disabled) {
@@ -171,7 +198,6 @@
         .card-corner { font-size: 1.1em; font-weight: bold; line-height: 1; }
         .card-corner.bottom { transform: rotate(180deg); text-align: left; }
         
-        /* RETTET: Ikonstørrelse tilbage til original/stor */
         .card-center-icon { 
             font-size: 3.5em; 
             align-self: center; 
@@ -179,7 +205,6 @@
             text-shadow: 0 2px 0 rgba(0,0,0,0.1); 
         }
 
-        /* RETTET: Sikrer at hjerter og ruder har farve */
         .suit-hearts { color: #8a0000; }
         .suit-diamonds { color: #b36b00; }
         .suit-spades, .suit-clubs { color: #1a1a1a; }
@@ -327,9 +352,7 @@
         .log-line { margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 2px; }
     </style>
 </head>
-<body>
-
-    <div id="ghost-shadow">
+<body class="bg-dungeon-1"> <div id="ghost-shadow">
         <div class="ghost" style="animation-delay: 10s;"></div>
         <div class="ghost" style="top: 60%; animation-duration: 25s; animation-delay: 0s;"></div>
     </div>
@@ -421,16 +444,29 @@
     let roomCount = 0; 
     let selectedMonsterIndex = -1; 
     let combatMode = 'weapon'; 
+    const dungeonBackgrounds = ['bg-dungeon-1', 'bg-dungeon-2', 'bg-dungeon-3']; // NY: Liste af baggrunde
 
     // --- DOM Elements ---
     const combatSwitchInput = document.getElementById('combat-switch-input');
+    const body = document.body;
 
     // --- Init ---
     document.addEventListener('DOMContentLoaded', () => {
+        setRandomBackground(); // Sæt tilfældig baggrund ved indlæsning
         document.getElementById('btn-start').addEventListener('click', startGame);
         document.getElementById('flee-btn').addEventListener('click', fleeRoom);
         combatSwitchInput.addEventListener('change', updateCombatMode);
     });
+
+    // NY: Funktion til at vælge tilfældig baggrund
+    function setRandomBackground() {
+        // Fjern eksisterende baggrundsklasser
+        dungeonBackgrounds.forEach(cls => body.classList.remove(cls));
+        
+        // Vælg ny tilfældig klasse og tilføj den
+        const randomClass = dungeonBackgrounds[Math.floor(Math.random() * dungeonBackgrounds.length)];
+        body.classList.add(randomClass);
+    }
 
     function updateCombatMode() {
         if (!combatSwitchInput.disabled) {
@@ -441,20 +477,17 @@
 
     function createDeck() {
         let d = [];
-        // Tal kort (2-10) i 4 kulører (36 kort)
         for(let v=2; v<=10; v++) {
             d.push({s:SUITS.SPADES, v:v, t:TYPE.MONSTER});
             d.push({s:SUITS.CLUBS, v:v, t:TYPE.MONSTER});
             d.push({s:SUITS.HEARTS, v:v, t:TYPE.POTION});
             d.push({s:SUITS.DIAMONDS, v:v, t:TYPE.WEAPON});
         }
-        // Billedkort/Es (J, Q, K, A) i 2 kulører (8 kort)
         [{n:'J',v:11},{n:'Q',v:12},{n:'K',v:13},{n:'A',v:14}].forEach(f => {
             d.push({s:SUITS.SPADES, v:f.v, d:f.n, t:TYPE.MONSTER});
             d.push({s:SUITS.CLUBS, v:f.v, d:f.n, t:TYPE.MONSTER});
         });
         
-        // Blander kortene
         for(let i=d.length-1; i>0; i--) {
             const j = Math.floor(Math.random()*(i+1));
             [d[i], d[j]] = [d[j], d[i]];
@@ -463,6 +496,7 @@
     }
 
     function startGame() {
+        setRandomBackground(); // Sæt tilfældig baggrund ved spilstart
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('game-container').style.display = 'flex';
         deck = createDeck();
@@ -472,7 +506,7 @@
         cardsPlayedInRoom = 0;
         potionUsedInRoom = false;
         roomCount = 0; 
-        combatMode = 'weapon'; 
+        combatMode = 'weapon'; // Altid start med våben mode
         dealRoom(true);
         updateUI();
         log("Spillet er startet.");
@@ -514,6 +548,7 @@
         potionUsedInRoom = false;
         
         selectedMonsterIndex = -1;
+        // Sæt altid combatMode til 'weapon' ved start af nyt rum/runden
         combatMode = 'weapon'; 
         
         if (checkWinCondition()) return; 
@@ -529,7 +564,6 @@
             return;
         }
         
-        // Sæt selectedMonsterIndex uanset korttype (bruges til visuel feedback, hvis det er et monster)
         selectedMonsterIndex = index; 
 
         if(card.t === TYPE.MONSTER) {
@@ -537,14 +571,19 @@
             
             resolveCombat(useWeapon);
             
-            // Regel: Hvis man valgte næver (combatMode === 'fist'), men havde et våben, skift mode tilbage til 'weapon'
-            if (combatMode === 'fist' && weapon) {
-                combatMode = 'weapon'; 
-            }
+            // Hvis spilleren bevidst valgte næver (combatMode === 'fist') DA KAMPEN SKULLE STARTE, 
+            // men havde et våben, skal mode ikke nulstilles.
+            // *Rettet logik*: Nu nulstilles combatMode kun ved dealRoom. Hvis spilleren har et våben
+            // og vælger næver, forbliver den på næver indtil næste rum, medmindre de skifter tilbage.
+            
         }
         else if(card.t === TYPE.WEAPON) {
             weapon = { value: card.v };
             log(`Udstyrede våben ${card.v}.`);
+            
+            // RETTET: Sikrer at combatMode forbliver på 'weapon' ved optagelse af våben.
+            combatMode = 'weapon'; 
+
             finishCard(index);
         }
         else if(card.t === TYPE.POTION) {
@@ -672,7 +711,7 @@
             wElem.style.color = "var(--accent-color)";
             
             combatSwitchInput.disabled = false;
-            // Opdater visuel switch baseret på den logiske combatMode
+            // Opdater visuel switch baseret på den logiske combatMode (checked = 'fist')
             combatSwitchInput.checked = (combatMode === 'fist'); 
             document.getElementById('switch-label').style.color = 'white';
 
@@ -707,8 +746,6 @@
             let el = document.createElement('div');
             let disabled = !isCardPlayable(c); 
             
-            // Fjernet den fejlbehæftede logik, der markerede alle monstre ved 'fist' mode uden våben.
-            // Kun det kort, man lige har klikket på, skal have den røde ramme (via selectedMonsterIndex, som nulstilles hurtigt).
             let isTarget = (selectedMonsterIndex === i); 
             
             el.className = `card ${disabled?'disabled':''} ${isTarget?'selected-target':''}`;
